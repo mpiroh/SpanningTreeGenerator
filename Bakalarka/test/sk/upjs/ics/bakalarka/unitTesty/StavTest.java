@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import junit.framework.Assert;
-import sk.upjs.ics.bakalarka.Stav;
+import sk.upjs.ics.bakalarka.State;
 
 public class StavTest {
 
@@ -13,23 +13,23 @@ public class StavTest {
 
 	@Test
 	public void pridajPrechodTest() {
-		Stav s1 = new Stav();
-		Stav s2 = new Stav();
+		State s1 = new State();
+		State s2 = new State();
 		
-		s1.pridajPrechod('a', s2);
-		s1.pridajPrechod('a', s1);
+		s1.addTransition('a', s2);
+		s1.addTransition('a', s1);
 		
-		Assert.assertEquals(s1.getPrechody()[(int)'a' - POSUN].size(), 2);
+		Assert.assertEquals(s1.getTransitions()[(int)'a' - POSUN].size(), 2);
 	}
 	
 	@Test
 	public void pridajEpsilonPrechodTest() {
-		Stav s1 = new Stav();
-		Stav s2 = new Stav();
+		State s1 = new State();
+		State s2 = new State();
 		
-		s1.pridajEpsilonPrechod(s2);
+		s1.pridajEpsilonTransition(s2);
 				
-		Assert.assertEquals(s1.getEpsilonPrechody().size(), 1);
+		Assert.assertEquals(s1.getEpsilonTransitions().size(), 1);
 	}
 
 }

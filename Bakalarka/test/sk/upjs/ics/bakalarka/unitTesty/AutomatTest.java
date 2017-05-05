@@ -5,23 +5,23 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import junit.framework.Assert;
-import sk.upjs.ics.bakalarka.Automat;
-import sk.upjs.ics.bakalarka.Stav;
+import sk.upjs.ics.bakalarka.Automaton;
+import sk.upjs.ics.bakalarka.State;
 
 public class AutomatTest {
 
 	@Test
 	public void pridajStavTest() {
-		Automat automat = new Automat();
-		Stav s1 = new Stav();
-		Stav s2 = new Stav();
-		Stav s3 = new Stav();
+		Automaton automat = new Automaton();
+		State s1 = new State();
+		State s2 = new State();
+		State s3 = new State();
 		
-		automat.pridajStav(s1);
-		automat.pridajStav(s2);
-		automat.pridajStav(s3);
+		automat.addState(s1);
+		automat.addState(s2);
+		automat.addState(s3);
 		
-		Assert.assertEquals(automat.getStavy().size(), 3);
+		Assert.assertEquals(automat.getStates().size(), 3);
 	}
 
 }

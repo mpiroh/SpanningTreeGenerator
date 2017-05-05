@@ -10,6 +10,7 @@ import javax.swing.JFrame;
 import javax.swing.JTextField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -44,6 +45,7 @@ public class Gui {
 		frame.setBounds(100, 100, 538, 329);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
+		frame.setTitle("Compare Regexp");
 		
 		textField1 = new JTextField();
 		textField1.setBounds(10, 37, 194, 20);
@@ -101,7 +103,7 @@ public class Gui {
 			}
 		});
 		
-		frame.setFocusable(true);
+		/*frame.setFocusable(true);
 		frame.addKeyListener(new KeyListener() {			
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -119,7 +121,7 @@ public class Gui {
 					clearButtonActionPerformed();
 				}
 			}
-		});
+		});*/
 	}
 	
 	public void compareButtonActionPerformed() {
@@ -127,17 +129,17 @@ public class Gui {
 		String regExp2 = textField2.getText();
 		Porovnavac porovnavac = new Porovnavac();
 		
-		RegularnyVyraz rv1 = new RegularnyVyraz(regExp1);
-		textPane1.setText(rv1.toAutomat().determinizuj().minimalizuj().toString());
+		RegularExpression rv1 = new RegularExpression(regExp1);
+		textPane1.setText(rv1.toNFA().determinize().minimize().toString());
 		
-		RegularnyVyraz rv2 = new RegularnyVyraz(regExp2);
-		textPane2.setText(rv2.toAutomat().determinizuj().minimalizuj().toString());
+		RegularExpression rv2 = new RegularExpression(regExp2);
+		textPane2.setText(rv2.toNFA().determinize().minimize().toString());
 		
 		boolean result = porovnavac.compare(regExp1, regExp2);
 		if (result == true) {
-			JOptionPane.showMessageDialog(frame, "They ARE equal.");
+			JOptionPane.showMessageDialog(frame, "They ARE equal.", "Result", JOptionPane.INFORMATION_MESSAGE);
 		} else {
-			JOptionPane.showMessageDialog(frame, "They ARE NOT equal.");
+			JOptionPane.showMessageDialog(frame, "They ARE NOT equal.", "Result", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 	

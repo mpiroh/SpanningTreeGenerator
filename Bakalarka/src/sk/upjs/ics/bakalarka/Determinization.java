@@ -9,32 +9,32 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-public class PrevodNFANaDFA {
+public class Determinization {
 	public static final int MAX_ZNAKOV = 26;
 	public static final int POSUN = 97;
-	private Queue<Stav> rad = new LinkedList<>();
-	private Queue<Stav> epsilonRad = new LinkedList<>();
+	private Queue<State> rad = new LinkedList<>();
+	private Queue<State> epsilonRad = new LinkedList<>();
 	private List<Character> abeceda;
-	private Map<Stav, List<Stav>> epsilonPrechody;
-	private List<Stav> anticyklickyZoznam = new ArrayList<>();
+	private Map<State, List<State>> epsilonPrechody;
+	private List<State> anticyklickyZoznam = new ArrayList<>();
 
-	public Automat toDFAAutomat(Automat oldAutomat) {
+	public Automaton toDFA(Automaton oldAutomat) {
 		this.abeceda = zistiAbecedu(oldAutomat);
 		this.epsilonPrechody = nacitajEpsilonPrechody(oldAutomat);
-		oldAutomat.vyrobBitKody();
+		oldAutomat.generateBitcodes();
 
-		Automat newAutomat = new Automat();
+		Automaton newAutomat = new Automaton();
 		
-		Stav pociatocnyStav = new Stav();
-		long pociatocnyBitKod = oldAutomat.getPociatocnyStav().getBitKod();
+		State pociatocnyStav = new State();
+		long pociatocnyBitKod = oldAutomat.getInitialState().getBitcode();
 		
-		epsilonRad.add(oldAutomat.getPociatocnyStav());
+		epsilonRad.add(oldAutomat.getInitialState());
 		while(!epsilonRad.isEmpty()) {
-			Stav e = epsilonRad.poll();
-			if (!e.getEpsilonPrechody().isEmpty()) {
-				for (Stav epsilonStav : e.getEpsilonPrechody()) {
+			State e = epsilonRad.poll();
+			if (!e.getEpsilonTransitions().isEmpty()) {
+				for (State epsilonStav : e.getEpsilonTransitions()) {
 					if (!anticyklickyZoznam.contains(epsilonStav)) {
-						pociatocnyBitKod = pociatocnyBitKod | epsilonStav.getBitKod();
+						pociatocnyBitKod = pociatocnyBitKod | epsilonStav.getBitcode();
 						epsilonRad.add(epsilonStav);
 						anticyklickyZoznam.add(epsilonStav);
 					}
@@ -43,15 +43,15 @@ public class PrevodNFANaDFA {
 		}
 		anticyklickyZoznam.clear();
 		
-		pociatocnyStav.setBitKod(pociatocnyBitKod);
-		newAutomat.pridajStav(pociatocnyStav);
-		newAutomat.setPociatocnyStav(pociatocnyStav);
+		pociatocnyStav.setBitcode(pociatocnyBitKod);
+		newAutomat.addState(pociatocnyStav);
+		newAutomat.setInitialState(pociatocnyStav);
 		
 		rad.add(pociatocnyStav);
 		
 		while(!rad.isEmpty()) {
-			Stav stav = rad.poll();
-			long bitKod = stav.getBitKod();
+			State stav = rad.poll();
+			long bitKod = stav.getBitcode();
 			
 			for (char znak : abeceda) {
 				long i = 0;
@@ -61,18 +61,18 @@ public class PrevodNFANaDFA {
 				while (Math.pow(2, i) <= bitKod) {
 					long bit = (bitKod & (1L << i));
 					if (bit != 0) {
-						for (Stav sss : oldAutomat.getStavPodlaBitKodu((long) (Math.pow(2, i)))
-								.getPrechody()[((int)znak)-POSUN]) {
-							cielovyBitKod = cielovyBitKod | sss.getBitKod();
+						for (State sss : oldAutomat.getStateByBitcode((long) (Math.pow(2, i)))
+								.getTransitions()[((int)znak)-POSUN]) {
+							cielovyBitKod = cielovyBitKod | sss.getBitcode();
 							
 							if (epsilonPrechody.get(sss) != null) {
 								epsilonRad.add(sss);
 								while(!epsilonRad.isEmpty()) {
-									Stav e = epsilonRad.poll();
+									State e = epsilonRad.poll();
 									if (epsilonPrechody.get(e) != null) {
-										for (Stav epsilonStav : epsilonPrechody.get(e)) {
+										for (State epsilonStav : epsilonPrechody.get(e)) {
 											if (!anticyklickyZoznam.contains(epsilonStav)) {
-												cielovyBitKod = cielovyBitKod | epsilonStav.getBitKod();
+												cielovyBitKod = cielovyBitKod | epsilonStav.getBitcode();
 												epsilonRad.add(epsilonStav);
 												anticyklickyZoznam.add(epsilonStav);
 											}
@@ -91,21 +91,21 @@ public class PrevodNFANaDFA {
 				
 				//zistim ci taky stav uz existuje (podla provnania bitkodov)
 				//ak existuje, tak pridam prechod
-				for (Stav ks : newAutomat.getStavy()) {
-					if (ks.getBitKod() == cielovyBitKod) {
+				for (State ks : newAutomat.getStates()) {
+					if (ks.getBitcode() == cielovyBitKod) {
 						stavUzExistuje = true;
 						//stav.pridajPrechod((char)(i + POSUN), ks);
-						newAutomat.pridajPrechod(stav, znak, ks);
+						newAutomat.addTransition(stav, znak, ks);
 						break;
 					}
 				}
 				
 				//ak neexistuje, vyrobim novy stav, pridam prechod a pridam novy stav do automatu, 
 				if (!stavUzExistuje) {
-					Stav novyStav = new Stav();
-					novyStav.setBitKod(cielovyBitKod);
-					stav.pridajPrechod(znak, novyStav);
-					newAutomat.pridajStav(novyStav);
+					State novyStav = new State();
+					novyStav.setBitcode(cielovyBitKod);
+					stav.addTransition(znak, novyStav);
+					newAutomat.addState(novyStav);
 					rad.add(novyStav);
 				}
 				anticyklickyZoznam.clear();
@@ -114,19 +114,19 @@ public class PrevodNFANaDFA {
 		
 		//nastavenie kocnovych stavov
 		List<Long> koncoveStavyBitKody = new ArrayList<>();
-		for (Stav s : oldAutomat.getKoncoveStavy()) {
-			koncoveStavyBitKody.add(s.getBitKod());
+		for (State s : oldAutomat.getFinalStates()) {
+			koncoveStavyBitKody.add(s.getBitcode());
 		}
-		for (Stav s : newAutomat.getStavy()) {
+		for (State s : newAutomat.getStates()) {
 			for (long bitKod : koncoveStavyBitKody) {
-				if ((s.getBitKod() & bitKod) != 0) {
-					newAutomat.pridajKoncovyStav(s);
+				if ((s.getBitcode() & bitKod) != 0) {
+					newAutomat.pridajFinalState(s);
 					break;
 				}
 			}
 		}
 		
-		newAutomat.vyrobId();
+		newAutomat.generateId();
 		return newAutomat;
 	}
 	
@@ -144,14 +144,14 @@ public class PrevodNFANaDFA {
 		return novyBitKod;
 	}*/
 	
-	private List<Character> zistiAbecedu(Automat automat) {
+	private List<Character> zistiAbecedu(Automaton automat) {
 		Set<Character> mnozinaAbeceda = new HashSet<>();
 		List<Character> abeceda = new ArrayList<>();
-		List<Stav> stavy = automat.getStavy();
+		List<State> stavy = automat.getStates();
 		
-		for (Stav s : stavy) {
-			for (int i = 0; i < s.getPrechody().length; i++) {
-				if (!s.getPrechody()[i].isEmpty()) {
+		for (State s : stavy) {
+			for (int i = 0; i < s.getTransitions().length; i++) {
+				if (!s.getTransitions()[i].isEmpty()) {
 					mnozinaAbeceda.add((char) (i + POSUN));
 				}
 			}
@@ -161,13 +161,13 @@ public class PrevodNFANaDFA {
 		return abeceda;
 	}
 	
-	private Map<Stav, List<Stav>> nacitajEpsilonPrechody(Automat automat) {
-		Map<Stav, List<Stav>> epsilony = new HashMap<>();
-		List<Stav> stavy = automat.getStavy();
+	private Map<State, List<State>> nacitajEpsilonPrechody(Automaton automat) {
+		Map<State, List<State>> epsilony = new HashMap<>();
+		List<State> stavy = automat.getStates();
 		
-		for (Stav s : stavy) {
-			if (!s.getEpsilonPrechody().isEmpty()) {
-				epsilony.put(s, s.getEpsilonPrechody());
+		for (State s : stavy) {
+			if (!s.getEpsilonTransitions().isEmpty()) {
+				epsilony.put(s, s.getEpsilonTransitions());
 			}
 		}
 		
