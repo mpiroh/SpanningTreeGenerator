@@ -27,7 +27,7 @@ public class StavTest {
 		State s1 = new State();
 		State s2 = new State();
 		
-		s1.pridajEpsilonTransition(s2);
+		s1.addEpsilonTransition(s2);
 				
 		Assert.assertEquals(s1.getEpsilonTransitions().size(), 1);
 	}

@@ -120,7 +120,7 @@ public class Determinization {
 		for (State s : newAutomat.getStates()) {
 			for (long bitKod : koncoveStavyBitKody) {
 				if ((s.getBitcode() & bitKod) != 0) {
-					newAutomat.pridajFinalState(s);
+					newAutomat.addFinalState(s);
 					break;
 				}
 			}

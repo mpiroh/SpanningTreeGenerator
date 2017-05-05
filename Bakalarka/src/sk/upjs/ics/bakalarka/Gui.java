@@ -127,7 +127,7 @@ public class Gui {
 	public void compareButtonActionPerformed() {
 		String regExp1 = textField1.getText();
 		String regExp2 = textField2.getText();
-		Porovnavac porovnavac = new Porovnavac();
+		Comparator porovnavac = new Comparator();
 		
 		RegularExpression rv1 = new RegularExpression(regExp1);
 		textPane1.setText(rv1.toNFA().determinize().minimize().toString());

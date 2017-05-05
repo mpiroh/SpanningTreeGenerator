@@ -23,7 +23,7 @@ public class State {
 		transitions[(int) c - SHIFT].add(state);
 	}
 
-	public void pridajEpsilonTransition(State state) {
+	public void addEpsilonTransition(State state) {
 		epsilonTransitions.add(state);
 	}
 

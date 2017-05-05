@@ -3,162 +3,162 @@ package sk.upjs.ics.bakalarka;
 import java.util.Stack;
 
 public class RegExpToNFA {
-	private String vyraz;
-	private Automaton automat;
-	private State pociatocnyStav;
-	private State aktualnyStav;
-	private State koncovyStav;
-	private char znak;
-	private Stack<State> zaciatkyZatvoriek = new Stack<State>();
-	private Stack<State> konceZatvoriek = new Stack<State>();
-	private boolean vZatvorke;
+	private String expression;
+	private Automaton automaton;
+	private State initialState;
+	private State currentState;
+	private State finalState;
+	private char c;
+	private Stack<State> bracketsBegins = new Stack<State>();
+	private Stack<State> bracketsEnds = new Stack<State>();
+	private boolean inBracket;
 
-	public Automaton toNFA(String vyraz) {
-		this.vyraz = vyraz;
-		this.automat = new Automaton();
+	public Automaton toNFA(String expression) {
+		this.expression = expression;
+		this.automaton = new Automaton();
 
 		init();
 
-		for (int i = 0; i < vyraz.length() - 1; i++) {
-			znak = vyraz.charAt(i);
-			char dalsiZnak = vyraz.charAt(i + 1);
-			if (znak == '*') {
+		for (int i = 0; i < expression.length() - 1; i++) {
+			c = expression.charAt(i);
+			char nextChar = expression.charAt(i + 1);
+			if (c == '*') {
 				continue;
 			}
-			if (znak == '+') {
-				vetvenie();
+			if (c == '+') {
+				union();
 				continue;
 			}
-			if (znak == '(') {
-				zaciatokZatvorky();
+			if (c == '(') {
+				bracketBegin();
 				continue;
 			}
-			if (znak == ')') {
-				if (dalsiZnak != '*') {
-					koniecZatvorky();
+			if (c == ')') {
+				if (nextChar != '*') {
+					beacketEnd();
 				} else {
-					koniecZatvorkySHviezdickou();
+					bracketEndWithKleene();
 				}
 				continue;
 			}
 
-			konstrukcia(dalsiZnak);
+			construction(nextChar);
 		}
 		
-		znak = vyraz.charAt(vyraz.length()-1);
-		if (znak != '*' && znak != ')') {
-			konkatenacia(znak);			
-		} else if (znak == ')') {
-			koniecZatvorky();
+		c = expression.charAt(expression.length()-1);
+		if (c != '*' && c != ')') {
+			concatenation(c);			
+		} else if (c == ')') {
+			beacketEnd();
 		}
-		aktualnyStav.pridajEpsilonTransition(koncovyStav);
+		currentState.addEpsilonTransition(finalState);
 
-		automat.generateId();
-		return automat;
+		automaton.generateId();
+		return automaton;
 	}
 
-	public void konstrukcia(char dalsiZnak) {
-		if (dalsiZnak == '*')
-			hviezdicka(znak);
+	public void construction(char nextChar) {
+		if (nextChar == '*')
+			kleene(c);
 		else
-			konkatenacia(znak);
+			concatenation(c);
 	}
 
-	public void konkatenacia(char znak) {
-		State s1 = new State();
-		automat.addState(s1);
+	public void concatenation(char c) {
+		State state = new State();
+		automaton.addState(state);
 		
-		if (znak == 'E') {
-			aktualnyStav.pridajEpsilonTransition(s1);
+		if (c == 'E') {
+			currentState.addEpsilonTransition(state);
 		} else {
-			aktualnyStav.addTransition(znak, s1);
+			currentState.addTransition(c, state);
 		}
 		
-		aktualnyStav = s1;
+		currentState = state;
 	}
 
-	public void hviezdicka(char znak) {
+	public void kleene(char c) {
 		State s1 = new State();
 		State s2 = new State();
 		State s3 = new State();
-		automat.addState(s1);
-		automat.addState(s2);
-		automat.addState(s3);
-		aktualnyStav.pridajEpsilonTransition(s1);
-		aktualnyStav.pridajEpsilonTransition(s3);
+		automaton.addState(s1);
+		automaton.addState(s2);
+		automaton.addState(s3);
+		currentState.addEpsilonTransition(s1);
+		currentState.addEpsilonTransition(s3);
 		
-		if (znak == 'E') {
-			s1.pridajEpsilonTransition(s2);
+		if (c == 'E') {
+			s1.addEpsilonTransition(s2);
 		} else {
-			s1.addTransition(znak, s2);
+			s1.addTransition(c, s2);
 		}
 		
-		s2.pridajEpsilonTransition(s1);
-		s2.pridajEpsilonTransition(s3);
-		aktualnyStav = s3;
+		s2.addEpsilonTransition(s1);
+		s2.addEpsilonTransition(s3);
+		currentState = s3;
 	}
 
-	public void vetvenie() {
-		if (!vZatvorke) {
-			aktualnyStav.pridajEpsilonTransition(koncovyStav);
+	public void union() {
+		if (!inBracket) {
+			currentState.addEpsilonTransition(finalState);
 			State s1 = new State();
-			automat.addState(s1);
-			pociatocnyStav.pridajEpsilonTransition(s1);
-			aktualnyStav = s1;
-		} else { //if (vZatvorke)
-			aktualnyStav.pridajEpsilonTransition(konceZatvoriek.peek());
+			automaton.addState(s1);
+			initialState.addEpsilonTransition(s1);
+			currentState = s1;
+		} else { //if (inBracket)
+			currentState.addEpsilonTransition(bracketsEnds.peek());
 			State s1 = new State();
-			automat.addState(s1);
-			zaciatkyZatvoriek.peek().pridajEpsilonTransition(s1);
-			aktualnyStav = s1;
+			automaton.addState(s1);
+			bracketsBegins.peek().addEpsilonTransition(s1);
+			currentState = s1;
 		}
 	}
 
-	public void zaciatokZatvorky() {
-		vZatvorke = true;
+	public void bracketBegin() {
+		inBracket = true;
 		State s1 = new State();
 		State s2 = new State();
-		automat.addState(s1);
-		automat.addState(s2);
-		aktualnyStav.pridajEpsilonTransition(s1);
-		zaciatkyZatvoriek.push(aktualnyStav);
-		konceZatvoriek.push(s2);
-		aktualnyStav = s1;
+		automaton.addState(s1);
+		automaton.addState(s2);
+		currentState.addEpsilonTransition(s1);
+		bracketsBegins.push(currentState);
+		bracketsEnds.push(s2);
+		currentState = s1;
 	}
 	
-	public void koniecZatvorky() {
-		aktualnyStav.pridajEpsilonTransition(konceZatvoriek.peek());
-		aktualnyStav = konceZatvoriek.pop();
+	public void beacketEnd() {
+		currentState.addEpsilonTransition(bracketsEnds.peek());
+		currentState = bracketsEnds.pop();
 		
-		zaciatkyZatvoriek.pop();
-		if (zaciatkyZatvoriek.isEmpty()) {
-			vZatvorke = false;
+		bracketsBegins.pop();
+		if (bracketsBegins.isEmpty()) {
+			inBracket = false;
 		}
 	}
 	
-	public void koniecZatvorkySHviezdickou() {
-		aktualnyStav.pridajEpsilonTransition(konceZatvoriek.peek());
-		State s1 = new State();
-		konceZatvoriek.peek().pridajEpsilonTransition(s1);
-		automat.addState(s1);
-		aktualnyStav = s1;
+	public void bracketEndWithKleene() {
+		currentState.addEpsilonTransition(bracketsEnds.peek());
+		State state = new State();
+		bracketsEnds.peek().addEpsilonTransition(state);
+		automaton.addState(state);
+		currentState = state;
 		
-		zaciatkyZatvoriek.peek().pridajEpsilonTransition(konceZatvoriek.peek());
-		konceZatvoriek.pop().pridajEpsilonTransition(zaciatkyZatvoriek.pop());
-		if (zaciatkyZatvoriek.isEmpty()) {
-			vZatvorke = false;
+		bracketsBegins.peek().addEpsilonTransition(bracketsEnds.peek());
+		bracketsEnds.pop().addEpsilonTransition(bracketsBegins.pop());
+		if (bracketsBegins.isEmpty()) {
+			inBracket = false;
 		}
 	}
 
 	public void init() {
-		pociatocnyStav = new State();
-		aktualnyStav = new State();
-		koncovyStav = new State();
-		pociatocnyStav.pridajEpsilonTransition(aktualnyStav);
-		automat.addState(pociatocnyStav);
-		automat.addState(koncovyStav);
-		automat.addState(aktualnyStav);
-		automat.setInitialState(pociatocnyStav);
-		automat.pridajFinalState(koncovyStav);
+		initialState = new State();
+		currentState = new State();
+		finalState = new State();
+		initialState.addEpsilonTransition(currentState);
+		automaton.addState(initialState);
+		automaton.addState(finalState);
+		automaton.addState(currentState);
+		automaton.setInitialState(initialState);
+		automaton.addFinalState(finalState);
 	}
 }

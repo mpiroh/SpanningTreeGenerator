@@ -12,7 +12,7 @@ public class Automaton {
 		states.add(state);
 	}
 	
-	public void pridajFinalState(State state) {
+	public void addFinalState(State state) {
 		finalStates.add(state);
 	}
 	
