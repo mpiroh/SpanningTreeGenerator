@@ -10,71 +10,71 @@ import java.util.Queue;
 import java.util.Set;
 
 public class Determinization {
-	public static final int MAX_ZNAKOV = 26;
-	public static final int POSUN = 97;
-	private Queue<State> rad = new LinkedList<>();
-	private Queue<State> epsilonRad = new LinkedList<>();
-	private List<Character> abeceda;
-	private Map<State, List<State>> epsilonPrechody;
-	private List<State> anticyklickyZoznam = new ArrayList<>();
+	public static final int MAX_CHARS = 26;
+	public static final int SHIFT = 97;
+	private Queue<State> queue = new LinkedList<>();
+	private Queue<State> epsilonQueue = new LinkedList<>();
+	private List<Character> alphabet;
+	private Map<State, List<State>> epsilonTransitions;
+	private List<State> anticyclicalList = new ArrayList<>();
 
-	public Automaton toDFA(Automaton oldAutomat) {
-		this.abeceda = zistiAbecedu(oldAutomat);
-		this.epsilonPrechody = nacitajEpsilonPrechody(oldAutomat);
-		oldAutomat.generateBitcodes();
+	public Automaton toDFA(Automaton oldAutomaton) {
+		this.alphabet = getAlphabetFromAutomaton(oldAutomaton);
+		this.epsilonTransitions = getEpsilonTransitionsFromAutomaton(oldAutomaton);
+		oldAutomaton.generateBitcodes();
 
-		Automaton newAutomat = new Automaton();
+		Automaton newAutomaton = new Automaton();
 		
-		State pociatocnyStav = new State();
-		long pociatocnyBitKod = oldAutomat.getInitialState().getBitcode();
+		State initialState = new State();
+		long initialBitcode = oldAutomaton.getInitialState().getBitcode();
 		
-		epsilonRad.add(oldAutomat.getInitialState());
-		while(!epsilonRad.isEmpty()) {
-			State e = epsilonRad.poll();
+		epsilonQueue.add(oldAutomaton.getInitialState());
+		while(!epsilonQueue.isEmpty()) {
+			State e = epsilonQueue.poll();
 			if (!e.getEpsilonTransitions().isEmpty()) {
-				for (State epsilonStav : e.getEpsilonTransitions()) {
-					if (!anticyklickyZoznam.contains(epsilonStav)) {
-						pociatocnyBitKod = pociatocnyBitKod | epsilonStav.getBitcode();
-						epsilonRad.add(epsilonStav);
-						anticyklickyZoznam.add(epsilonStav);
+				for (State epsilonState : e.getEpsilonTransitions()) {
+					if (!anticyclicalList.contains(epsilonState)) {
+						initialBitcode = initialBitcode | epsilonState.getBitcode();
+						epsilonQueue.add(epsilonState);
+						anticyclicalList.add(epsilonState);
 					}
 				}
 			}
 		}
-		anticyklickyZoznam.clear();
+		anticyclicalList.clear();
 		
-		pociatocnyStav.setBitcode(pociatocnyBitKod);
-		newAutomat.addState(pociatocnyStav);
-		newAutomat.setInitialState(pociatocnyStav);
+		initialState.setBitcode(initialBitcode);
+		newAutomaton.addState(initialState);
+		newAutomaton.setInitialState(initialState);
 		
-		rad.add(pociatocnyStav);
+		queue.add(initialState);
 		
-		while(!rad.isEmpty()) {
-			State stav = rad.poll();
-			long bitKod = stav.getBitcode();
+		while(!queue.isEmpty()) {
+			State state = queue.poll();
+			long bitcode = state.getBitcode();
 			
-			for (char znak : abeceda) {
+			for (char c : alphabet) {
 				long i = 0;
-				long cielovyBitKod = 0;
+				long targetBitcode = 0;
 
 				//zistim cielovy bitkod zatial bez eplsionovych prechodov
-				while (Math.pow(2, i) <= bitKod) {
-					long bit = (bitKod & (1L << i));
+				while (Math.pow(2, i) <= bitcode) {
+					long bit = (bitcode & (1L << i));
 					if (bit != 0) {
-						for (State sss : oldAutomat.getStateByBitcode((long) (Math.pow(2, i)))
-								.getTransitions()[((int)znak)-POSUN]) {
-							cielovyBitKod = cielovyBitKod | sss.getBitcode();
+						for (State sss : oldAutomaton.getStateByBitcode((long) (Math.pow(2, i)))
+								.getTransitions()[((int)c)-SHIFT]) {
+							targetBitcode = targetBitcode | sss.getBitcode();
 							
-							if (epsilonPrechody.get(sss) != null) {
-								epsilonRad.add(sss);
-								while(!epsilonRad.isEmpty()) {
-									State e = epsilonRad.poll();
-									if (epsilonPrechody.get(e) != null) {
-										for (State epsilonStav : epsilonPrechody.get(e)) {
-											if (!anticyklickyZoznam.contains(epsilonStav)) {
-												cielovyBitKod = cielovyBitKod | epsilonStav.getBitcode();
-												epsilonRad.add(epsilonStav);
-												anticyklickyZoznam.add(epsilonStav);
+							if (epsilonTransitions.get(sss) != null) {
+								epsilonQueue.add(sss);
+								while(!epsilonQueue.isEmpty()) {
+									State e = epsilonQueue.poll();
+									if (epsilonTransitions.get(e) != null) {
+										for (State epsilonState : epsilonTransitions.get(e)) {
+											if (!anticyclicalList.contains(epsilonState)) {
+												targetBitcode = targetBitcode | epsilonState.getBitcode();
+												epsilonQueue.add(epsilonState);
+												anticyclicalList.add(epsilonState);
 											}
 										}
 									}
@@ -87,47 +87,47 @@ public class Determinization {
 					i++;
 				}				
 				
-				boolean stavUzExistuje = false;
+				boolean stavAlreadyExists = false;
 				
 				//zistim ci taky stav uz existuje (podla provnania bitkodov)
 				//ak existuje, tak pridam prechod
-				for (State ks : newAutomat.getStates()) {
-					if (ks.getBitcode() == cielovyBitKod) {
-						stavUzExistuje = true;
+				for (State ks : newAutomaton.getStates()) {
+					if (ks.getBitcode() == targetBitcode) {
+						stavAlreadyExists = true;
 						//stav.pridajPrechod((char)(i + POSUN), ks);
-						newAutomat.addTransition(stav, znak, ks);
+						newAutomaton.addTransition(state, c, ks);
 						break;
 					}
 				}
 				
 				//ak neexistuje, vyrobim novy stav, pridam prechod a pridam novy stav do automatu, 
-				if (!stavUzExistuje) {
+				if (!stavAlreadyExists) {
 					State novyStav = new State();
-					novyStav.setBitcode(cielovyBitKod);
-					stav.addTransition(znak, novyStav);
-					newAutomat.addState(novyStav);
-					rad.add(novyStav);
+					novyStav.setBitcode(targetBitcode);
+					state.addTransition(c, novyStav);
+					newAutomaton.addState(novyStav);
+					queue.add(novyStav);
 				}
-				anticyklickyZoznam.clear();
+				anticyclicalList.clear();
 			}
 		}
-		
+		//
 		//nastavenie kocnovych stavov
-		List<Long> koncoveStavyBitKody = new ArrayList<>();
-		for (State s : oldAutomat.getFinalStates()) {
-			koncoveStavyBitKody.add(s.getBitcode());
+		List<Long> finalStatesBitcodes = new ArrayList<>();
+		for (State s : oldAutomaton.getFinalStates()) {
+			finalStatesBitcodes.add(s.getBitcode());
 		}
-		for (State s : newAutomat.getStates()) {
-			for (long bitKod : koncoveStavyBitKody) {
-				if ((s.getBitcode() & bitKod) != 0) {
-					newAutomat.addFinalState(s);
+		for (State s : newAutomaton.getStates()) {
+			for (long bitcode : finalStatesBitcodes) {
+				if ((s.getBitcode() & bitcode) != 0) {
+					newAutomaton.addFinalState(s);
 					break;
 				}
 			}
 		}
 		
-		newAutomat.generateId();
-		return newAutomat;
+		newAutomaton.generateId();
+		return newAutomaton;
 	}
 	
 	/*public long skontrolujBitKod(Long bitKod) {
@@ -144,33 +144,33 @@ public class Determinization {
 		return novyBitKod;
 	}*/
 	
-	private List<Character> zistiAbecedu(Automaton automat) {
-		Set<Character> mnozinaAbeceda = new HashSet<>();
-		List<Character> abeceda = new ArrayList<>();
-		List<State> stavy = automat.getStates();
+	private List<Character> getAlphabetFromAutomaton(Automaton automaton) {
+		Set<Character> alphabetSet = new HashSet<>();
+		List<Character> alphabet = new ArrayList<>();
+		List<State> states = automaton.getStates();
 		
-		for (State s : stavy) {
+		for (State s : states) {
 			for (int i = 0; i < s.getTransitions().length; i++) {
 				if (!s.getTransitions()[i].isEmpty()) {
-					mnozinaAbeceda.add((char) (i + POSUN));
+					alphabetSet.add((char) (i + SHIFT));
 				}
 			}
 		}
-		abeceda.addAll(mnozinaAbeceda);
+		alphabet.addAll(alphabetSet);
 		
-		return abeceda;
+		return alphabet;
 	}
 	
-	private Map<State, List<State>> nacitajEpsilonPrechody(Automaton automat) {
-		Map<State, List<State>> epsilony = new HashMap<>();
-		List<State> stavy = automat.getStates();
+	private Map<State, List<State>> getEpsilonTransitionsFromAutomaton(Automaton automaton) {
+		Map<State, List<State>> epsilons = new HashMap<>();
+		List<State> states = automaton.getStates();
 		
-		for (State s : stavy) {
+		for (State s : states) {
 			if (!s.getEpsilonTransitions().isEmpty()) {
-				epsilony.put(s, s.getEpsilonTransitions());
+				epsilons.put(s, s.getEpsilonTransitions());
 			}
 		}
 		
-		return epsilony;
+		return epsilons;
 	}
 }

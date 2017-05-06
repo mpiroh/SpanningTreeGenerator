@@ -130,10 +130,10 @@ public class Gui {
 		Comparator porovnavac = new Comparator();
 		
 		RegularExpression rv1 = new RegularExpression(regExp1);
-		textPane1.setText(rv1.toNFA().determinize().minimize().toString());
+		textPane1.setText(rv1.toNFA().determinize()/*.minimize()*/.toString());
 		
 		RegularExpression rv2 = new RegularExpression(regExp2);
-		textPane2.setText(rv2.toNFA().determinize().minimize().toString());
+		textPane2.setText(rv2.toNFA().determinize()/*.minimize()*/.toString());
 		
 		boolean result = porovnavac.compare(regExp1, regExp2);
 		if (result == true) {
@@ -146,5 +146,6 @@ public class Gui {
 	public void clearButtonActionPerformed() {
 		textPane1.setText("");
 		textPane2.setText("");
+		System.out.println(Long.MAX_VALUE);
 	}
 }
