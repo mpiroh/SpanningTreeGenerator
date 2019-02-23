@@ -102,11 +102,11 @@ public class Determinization {
 				
 				//ak neexistuje, vyrobim novy stav, pridam prechod a pridam novy stav do automatu, 
 				if (!stavAlreadyExists) {
-					State novyStav = new State();
-					novyStav.setBitcode(targetBitcode);
-					state.addTransition(c, novyStav);
-					newAutomaton.addState(novyStav);
-					queue.add(novyStav);
+					State newState = new State();
+					newState.setBitcode(targetBitcode);
+					state.addTransition(c, newState);
+					newAutomaton.addState(newState);
+					queue.add(newState);
 				}
 				anticyclicalList.clear();
 			}
